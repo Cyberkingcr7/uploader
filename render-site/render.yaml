@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: render-site
-    env: node
-    buildCommand: npm install
-    startCommand: npm start
-    envVars:
-      - key: ROUTE_NAME
-        value: name
