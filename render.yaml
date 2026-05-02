@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: render-site
+    name: render-file-drop
     env: node
     buildCommand: npm install
     startCommand: npm start
     envVars:
-      - key: ROUTE_NAME
-        value: name
+      - key: BASE_PATH
+        value: files

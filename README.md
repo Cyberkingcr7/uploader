@@ -1,16 +1,21 @@
-# Render JS Site
+# Render File Upload App
 
-This is a small Node/Express app that serves a static website from:
+This app lets you upload a file or a folder and get a direct download link.
 
-`your-app.onrender.com/name`
+Example deployed link:
 
-## Files
+`https://your-app.onrender.com/files/abc123`
 
-- `server.js`: Express server
-- `site/`: Put your website files here
-- `render.yaml`: Optional Render config
+## What it does
 
-## Local run
+- Opens a small upload page at `/`
+- Accepts single-file uploads
+- Accepts folder uploads from browsers that support folder picking
+- Saves uploaded content in `uploads/`
+- Returns a direct download link
+- Downloads folders as ZIP files
+
+## Run locally
 
 ```bash
 npm install
@@ -19,16 +24,28 @@ npm start
 
 Then open:
 
-`http://localhost:3000/name`
+`http://localhost:3000`
 
-## Change the short path
+## Change the download path
 
-By default the route is `name`.
+By default, links use:
 
-You can change it by setting the `ROUTE_NAME` environment variable on Render, for example:
+`/files/:id`
 
-`ROUTE_NAME=myname`
+To change that on Render, set:
 
-That would make the site available at:
+`BASE_PATH=myname`
 
-`your-app.onrender.com/myname`
+Then your links would look like:
+
+`https://your-app.onrender.com/myname/abc123`
+
+## Important
+
+This is a simple starter.
+
+- Uploaded files are stored on the Render instance filesystem
+- On many Render setups, uploaded files are not permanent across redeploys or restarts
+- Folder downloads are delivered as ZIP archives, which is the normal browser-friendly way to download a folder
+
+If you want permanent file hosting, the next step is to store uploads in a real object store like S3, Cloudinary, or Uploadcare.
