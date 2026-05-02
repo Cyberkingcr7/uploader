@@ -48,6 +48,7 @@ const upload = multer({ storage });
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(publicDir));
+app.use('/vendor/jszip', express.static(path.join(__dirname, 'node_modules', 'jszip', 'dist')));
 
 app.get('/', (_req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));

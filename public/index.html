@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Drop</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --panel: #fffdfa;
+      --text: #201914;
+      --accent: #a34b20;
+      --border: #e6d6c4;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(163, 75, 32, 0.18), transparent 28%),
+        linear-gradient(135deg, #f9f4ec, var(--bg));
+    }
+
+    main {
+      width: min(680px, 100%);
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 22px 60px rgba(89, 48, 22, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      line-height: 0.95;
+    }
+
+    p {
+      line-height: 1.6;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    input[type="file"] {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    button {
+      width: fit-content;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 24px;
+      padding: 18px;
+      border-radius: 18px;
+      background: #f8ecdf;
+      overflow-wrap: anywhere;
+    }
+
+    a {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Upload a file or folder.</h1>
+    <p>Upload one file or a whole folder, then use the generated download button anywhere else.</p>
+
+    <form id="file-form">
+      <input type="file" name="file" id="file" required>
+      <button type="submit">Upload file</button>
+    </form>
+
+    <form id="folder-form">
+      <input type="file" id="folder" webkitdirectory directory multiple required>
+      <button type="submit">Upload folder</button>
+    </form>
+
+    <div id="result" hidden></div>
+  </main>
+
+  <script src="/vendor/jszip/jszip.min.js"></script>
+  <script>
+    const fileForm = document.getElementById('file-form');
+    const folderForm = document.getElementById('folder-form');
+    const result = document.getElementById('result');
+
+    const buildZipBlob = async (files) => {
+      const zip = new JSZip();
+
+      for (const file of files) {
+        const relativePath = (file.webkitRelativePath || file.name).replace(/^\/+/, '');
+        zip.file(relativePath, file);
+      }
+
+      return zip.generateAsync(
+        { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+        (metadata) => {
+          result.hidden = false;
+          result.textContent = `Packing folder... ${Math.round(metadata.percent)}%`;
+        }
+      );
+    };
+
+    const uploadFormData = async (url, formData, loadingText) => {
+      result.hidden = false;
+      result.textContent = loadingText;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed.');
+      }
+
+      return data;
+    };
+    const renderResult = (data) => {
+      result.hidden = false;
+      result.innerHTML = `
+        <strong>Uploaded:</strong> ${data.originalName}<br>
+        <strong>Type:</strong> ${data.type}<br>
+        <strong>Download link:</strong><br>
+        <a href="${data.downloadUrl}" target="_blank" rel="noreferrer">${data.downloadUrl}</a><br><br>
+        <a href="${data.downloadUrl}" download>Download now</a>
+      `;
+    };
+
+    fileForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      try {
+        const formData = new FormData(fileForm);
+        const data = await uploadFormData('/upload', formData, 'Uploading file...');
+        renderResult(data);
+      } catch (error) {
+        result.textContent = error.message;
+      }
+    });
+
+    folderForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const input = document.getElementById('folder');
+      const files = Array.from(input.files || []);
+
+      if (!files.length) {
+        result.hidden = false;
+        result.textContent = 'Pick a folder first.';
+        return;
+      }
+
+      try {
+        result.hidden = false;
+        result.textContent = `Packing ${files.length} files...`;
+
+        const firstPath = files[0].webkitRelativePath || files[0].name;
+        const folderName = firstPath.split('/')[0] || 'folder';
+        const zipBlob = await buildZipBlob(files);
+        const formData = new FormData();
+        formData.append('file', zipBlob, `${folderName}.zip`);
+
+        const data = await uploadFormData('/upload', formData, `Uploading ${folderName}.zip...`);
+        data.type = 'folder archive';
+        data.originalName = `${folderName}.zip`;
+        renderResult(data);
+      } catch (error) {
+        result.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

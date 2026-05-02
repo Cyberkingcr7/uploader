@@ -13,7 +13,7 @@ Example deployed link:
 - Accepts folder uploads from browsers that support folder picking
 - Saves uploaded content in `uploads/`
 - Returns a direct download link
-- Downloads folders as ZIP files
+- Packs folders into a single `.zip` file before upload for faster transfer
 
 ## Run locally
 
@@ -46,6 +46,6 @@ This is a simple starter.
 
 - Uploaded files are stored on the Render instance filesystem
 - On many Render setups, uploaded files are not permanent across redeploys or restarts
-- Folder downloads are delivered as ZIP archives, which is the normal browser-friendly way to download a folder
+- Folder uploads are converted in the browser into a single `.zip` archive, then uploaded as one file
 
 If you want permanent file hosting, the next step is to store uploads in a real object store like S3, Cloudinary, or Uploadcare.
